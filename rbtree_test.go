@@ -4,7 +4,83 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/willf/bitset"
 )
+
+func printTree(n *Node, dir byte, level uint, pipes *bitset.BitSet, prefix int) {
+	prefix++
+
+	var (
+		l = pipes
+		r = pipes
+		c = pipes.Clone().Clear(level)
+	)
+	if dir == 'r' {
+		r = c
+	}
+	if dir == 'l' {
+		l = c
+	}
+
+	if n.Right == nil {
+		fmt.Printf("%s┌⦿\n", stringPrefix(r, prefix))
+	} else {
+		printTree(n.Right, 'r', level+1, r.Clone().Set(level+1), prefix)
+	}
+
+	var p string
+	switch dir {
+	case 'l':
+		p = "└"
+	case 'r':
+		p = "┌"
+	default:
+		p = "╴"
+	}
+	fmt.Printf("%s%s%v\n", stringPrefix(pipes, prefix-1), p, n.Key)
+
+	if n.Left == nil {
+		fmt.Printf("%s└⦿\n", stringPrefix(l, prefix))
+	} else {
+		printTree(n.Left, 'l', level+1, l.Clone().Set(level+1), prefix)
+	}
+}
+
+func stringPrefix(pipes *bitset.BitSet, n int) string {
+	s := make([]rune, n)
+	for i := range s {
+		if pipes.Test(uint(i)) {
+			s[i] = '│'
+		} else {
+			s[i] = ' '
+		}
+	}
+	return string(s)
+}
+
+func TestPrint(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input []int
+	}{
+		{
+			input: []int{2, 3, 1, 5, 4},
+		},
+		{
+			input: []int{8, 2, 3, 1, 5, 4, 7},
+		},
+	} {
+		t.Run("", func(t *testing.T) {
+			var root *Node
+			for _, key := range test.input {
+				root, _ = root.Insert(key)
+			}
+
+			printTree(root, 0, 0, new(bitset.BitSet), 0)
+		})
+	}
+}
 
 func TestNodeInsert(t *testing.T) {
 	for _, test := range []struct {
